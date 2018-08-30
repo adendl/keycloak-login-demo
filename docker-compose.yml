@@ -1,0 +1,37 @@
+version: '3'
+
+volumes:
+  postgres_data:
+    driver: local
+
+services:
+  postgres:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: 1800redhat
+
+  keycloak:
+    image: jboss/keycloak:4.2.1.Final
+    environment:
+      DB_VENDOR: POSTGRES
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: 1800redhat
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: 1800redhat
+    ports:
+      - 8081:8080
+    depends_on:
+      - postgres
+
+  wildfly:
+    image: jboss/keycloak-adapter-wildfly:4.2.1.Final
+    ports:
+      - 8080:8080
+      - 9990:9990
+    command: bash -c "/opt/jboss/wildfly/bin/standalone.sh -bmanagement 0.0.0.0 -b 0.0.0.0"
