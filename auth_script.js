@@ -25,34 +25,29 @@ SimpleHttp = Java.type("org.keycloak.broker.provider.util.SimpleHttp");
  * @param context {@see org.keycloak.authentication.AuthenticationFlowContext}
  */
 function authenticate(context) {
-
-    var username = user ? user.username : "anonymous";
-    LOG.info(script.name + " trace auth for: " + username);
     
-    // get the user attributes, and see if this is in the user agent
-    var user_agent = httpRequest.getHttpHeaders().getHeaderString("User-Agent")
-    var ip = context.getConnection().getRemoteAddr()
-    var attr_agent = user.getAttribute("user-agent")[0]
-    LOG.info("request user-agent: "+user_agent)
-    LOG.info("saved user-agent: "+attr_agent)
-    if (!user_agent.contains(attr_agent)) {
-        
-          LOG.info("Looks like a new login, lets send an email!")
-          var endpoint = "http://172.17.0.1:9393/send"
-          var html = "<html><body>"
-          html += "<p>A new login has been detected with the following details:"
-          html += "<p><strong>User agent</strong>: "+user_agent
-          html += "<p><strong>IP address</strong>: "+ip
-          html += "<p>For your safety we've blocked this login attempt. Please "
-          html += "contact your local security team for more assistance."
-          html += "</body></html>"
-          var status = SimpleHttp.doPost(endpoint,session)
-                    .param("to",user.getEmail())
-                    .param("subject","New login from unknown device")
-                    .param("html",html).asString()
-          LOG.info("status: "+status);
-          context.failure(AuthenticationFlowError.INVALID_CREDENTIALS)
-    } else {
-      context.success();
+    //set values for IP Address and username
+    const username = user.username;
+    const ip = context.getConnection().getRemoteAddr();
+    const userRegexString = new RegExp('foo*'); //insert regex for if username is priviliged user
+    const ipAddrRegexString = new RegExp('foo*'); //insert regex for if IP Address belongs to bastion host or priviliged network zone
+    
+    LOG.info(script.name + " trace auth for: " + username + " at IP Address: "+ ip);
+    
+
+
+    if (username.test(userRegexString)){     //regex check on if username is an admin/privileged user
+        if (ip.test(ipAddrRegexString)){ // regex check on if IP Address matches desired format
+            LOG.info("insert log message");
+            context.success(); //user is admin and in priviliged network zone
+        }
+        else {
+            LOG.info("Insert log message"); //user is admin but not on priviliged network zone
+            context.failure(AuthenticationFlowError.DISPLAY_NOT_SUPPORTED);
+        }
+    } else{
+        LOG.info("insert log message");
+        context.success(); //user is not priviliged
     }
+
 }
